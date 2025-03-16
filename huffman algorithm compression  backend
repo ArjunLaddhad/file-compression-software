@@ -1,0 +1,89 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <filesystem>
+#include <zlib.h>
+
+namespace fs = std::filesystem;
+
+class FileCompressor {
+public:
+    static bool CompressFile(const std::string& inputFile, const std::string& outputFile) {
+        std::ifstream in(inputFile, std::ios::binary);
+        if (!in) {
+            std::cerr << "Error opening input file!" << std::endl;
+            return false;
+        }
+        
+        std::ofstream out(outputFile, std::ios::binary);
+        if (!out) {
+            std::cerr << "Error opening output file!" << std::endl;
+            return false;
+        }
+        
+        std::vector<char> buffer((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        uLongf compressedSize = compressBound(buffer.size());
+        std::vector<Bytef> compressedData(compressedSize);
+        
+        if (compress(compressedData.data(), &compressedSize, reinterpret_cast<const Bytef*>(buffer.data()), buffer.size()) != Z_OK) {
+            std::cerr << "Compression failed!" << std::endl;
+            return false;
+        }
+        
+        out.write(reinterpret_cast<char*>(compressedData.data()), compressedSize);
+        return true;
+    }
+
+    static bool DecompressFile(const std::string& inputFile, const std::string& outputFile) {
+        std::ifstream in(inputFile, std::ios::binary);
+        if (!in) {
+            std::cerr << "Error opening input file!" << std::endl;
+            return false;
+        }
+        
+        std::ofstream out(outputFile, std::ios::binary);
+        if (!out) {
+            std::cerr << "Error opening output file!" << std::endl;
+            return false;
+        }
+        
+        std::vector<char> buffer((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        uLongf decompressedSize = buffer.size() * 4;
+        std::vector<Bytef> decompressedData(decompressedSize);
+        
+        if (uncompress(decompressedData.data(), &decompressedSize, reinterpret_cast<const Bytef*>(buffer.data()), buffer.size()) != Z_OK) {
+            std::cerr << "Decompression failed!" << std::endl;
+            return false;
+        }
+        
+        out.write(reinterpret_cast<char*>(decompressedData.data()), decompressedSize);
+        return true;
+    }
+};
+
+int main(int argc, char* argv[]) {
+    if (argc < 4) {
+        std::cerr << "Usage: " << argv[0] << " <compress/decompress> <input file> <output file>" << std::endl;
+        return 1;
+    }
+    
+    std::string operation = argv[1];
+    std::string inputFile = argv[2];
+    std::string outputFile = argv[3];
+    
+    if (operation == "compress") {
+        if (FileCompressor::CompressFile(inputFile, outputFile)) {
+            std::cout << "File compressed successfully!" << std::endl;
+        }
+    } else if (operation == "decompress") {
+        if (FileCompressor::DecompressFile(inputFile, outputFile)) {
+            std::cout << "File decompressed successfully!" << std::endl;
+        }
+    } else {
+        std::cerr << "Invalid operation! Use 'compress' or 'decompress'." << std::endl;
+        return 1;
+    }
+    
+    return 0;
+}
