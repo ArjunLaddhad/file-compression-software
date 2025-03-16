@@ -1,0 +1,73 @@
+#include <QApplication>
+#include <QWidget>
+#include <QPushButton>
+#include <QVBoxLayout>
+#include <QFileDialog>
+#include <QLabel>
+
+class CompressorGUI : public QWidget {
+    Q_OBJECT
+
+public:
+    CompressorGUI(QWidget *parent = nullptr) : QWidget(parent) {
+        QVBoxLayout *layout = new QVBoxLayout(this);
+        
+        QLabel *label = new QLabel("Select a file to compress or decompress:", this);
+        layout->addWidget(label);
+        
+        QPushButton *selectButton = new QPushButton("Select File", this);
+        layout->addWidget(selectButton);
+        
+        QPushButton *compressButton = new QPushButton("Compress", this);
+        layout->addWidget(compressButton);
+        
+        QPushButton *decompressButton = new QPushButton("Decompress", this);
+        layout->addWidget(decompressButton);
+        
+        statusLabel = new QLabel("Status: Waiting for input", this);
+        layout->addWidget(statusLabel);
+        
+        connect(selectButton, &QPushButton::clicked, this, &CompressorGUI::selectFile);
+        connect(compressButton, &QPushButton::clicked, this, &CompressorGUI::compressFile);
+        connect(decompressButton, &QPushButton::clicked, this, &CompressorGUI::decompressFile);
+    }
+
+private slots:
+    void selectFile() {
+        filePath = QFileDialog::getOpenFileName(this, "Select File", "", "All Files (*.*)");
+        if (!filePath.isEmpty()) {
+            statusLabel->setText("Selected File: " + filePath);
+        }
+    }
+
+    void compressFile() {
+        if (filePath.isEmpty()) {
+            statusLabel->setText("No file selected");
+            return;
+        }
+        statusLabel->setText("Compressing file: " + filePath);
+        // Call backend compression function here
+    }
+
+    void decompressFile() {
+        if (filePath.isEmpty()) {
+            statusLabel->setText("No file selected");
+            return;
+        }
+        statusLabel->setText("Decompressing file: " + filePath);
+        // Call backend decompression function here
+    }
+
+private:
+    QLabel *statusLabel;
+    QString filePath;
+};
+
+int main(int argc, char *argv[]) {
+    QApplication app(argc, argv);
+    CompressorGUI window;
+    window.setWindowTitle("File Compression Tool");
+    window.resize(400, 200);
+    window.show();
+    return app.exec();
+}
